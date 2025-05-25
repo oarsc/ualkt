@@ -5,34 +5,28 @@ import org.oar.ualkt.model.SearchResult
 import org.oar.ualkt.services.controller.Controller
 import java.security.MessageDigest
 
-abstract class Command(
-    val keyName: String
-) {
-    var id: String? = null
+abstract class Command {
+    lateinit var id: String
 
-    abstract var keyWord: String
-    var title = ""
-    open var icon = ""
-    var command = ""
+    abstract val keyWord: String
+    open val title = "- no title -"
+    open val icon = "ualkt"
+
     var fixedPriority: Int? = null
-
     var keepHistory = true
     var requiresParams = false
     var caseInsensitive = false
     var startsWith = true
 
-    fun generateId() {
-        if (this.id == null) {
-            // md5
-            this.id = MessageDigest.getInstance("MD5")
-                .digest((this.keyName+this.keyWord).toByteArray())
-                .joinToString("") { "%02x".format(it) }
-        }
+    fun generateMd5Id() {
+        this.id = MessageDigest.getInstance("MD5")
+            .digest((this::class.simpleName+this.keyWord).toByteArray())
+            .joinToString("") { "%02x".format(it) }
     }
 
     abstract fun perform(argsList: List<String>, controller: Controller)
 
-    fun match(inputText: String): SearchResult {
+    open fun match(inputText: String): SearchResult {
         if (inputText.isBlank()) {
             return SearchResult(SearchLevel.NOT_FOUND)
         }
@@ -55,7 +49,7 @@ abstract class Command(
         return search(this.keyWord, value, true, true, this.title === this.keyWord)
     }
 
-    private fun search(
+    protected fun search(
         originalText: String,
         searchText: String,
         caseInsensitive: Boolean = false,

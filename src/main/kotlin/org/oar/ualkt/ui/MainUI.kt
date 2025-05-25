@@ -1,6 +1,7 @@
 package org.oar.ualkt.ui
 
-import org.oar.ualkt.commands.Command
+import org.oar.ualkt.model.CommandWithSearchResults
+import org.oar.ualkt.model.SearchLevel
 import org.oar.ualkt.services.controller.Controller
 import org.oar.ualkt.ui.themes.Themes
 import org.oar.ualkt.ui.themes.Themes.themedBackground
@@ -16,13 +17,19 @@ import java.awt.event.KeyEvent
 import javax.swing.BoxLayout
 import javax.swing.JFrame
 import javax.swing.JPanel
+import javax.swing.JScrollPane
 import javax.swing.JTextField
+import javax.swing.SwingUtilities
 import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
+
 
 class MainUI {
     lateinit var controller: Controller
 
     private val options = mutableListOf<OptionUI>()
+    private var skipNextOnChange = 0
+    private val listener = OnChangeDocumentListener()
 
     private val frame = JFrame(APP_NAME).apply {
         defaultCloseOperation = JFrame.EXIT_ON_CLOSE
@@ -49,15 +56,8 @@ class MainUI {
             }
         })
 
-        document.addDocumentListener(object : javax.swing.event.DocumentListener {
-            override fun insertUpdate(e: DocumentEvent) = onChange()
-            override fun removeUpdate(e: DocumentEvent) = onChange()
-            override fun changedUpdate(e: DocumentEvent) = onChange()
-
-            private fun onChange() {
-                controller.onChangedInput(unselectedText)
-            }
-        })
+        focusTraversalKeysEnabled = false
+        document.addDocumentListener(listener)
 
         addKeyListener(object : KeyAdapter() {
             override fun keyPressed(event: KeyEvent) {
@@ -79,6 +79,9 @@ class MainUI {
                         if (Themes.stackOnTop) controller.onNext()
                         else controller.onPrev()
                     }
+                    KeyEvent.VK_TAB -> {
+                        selectionStart = selectionEnd
+                    }
                 }
             }
         })
@@ -89,6 +92,18 @@ class MainUI {
     private val optionsPanel = JPanel().apply {
         isOpaque = false
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
+//        frame.contentPane.add(this)
+    }
+
+    private val optionsScrollPane = JScrollPane(optionsPanel).apply {
+        isOpaque = false
+        viewport.isOpaque = false
+        border = null
+
+        horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+
+        themedSize(0)
+
         frame.contentPane.add(this)
     }
 
@@ -98,13 +113,13 @@ class MainUI {
 
     fun showWindow() {
         if (frame.isVisible) return
-        frame.isVisible = true
         inputText.text = ""
-        inputText.grabFocus()
         updateOptions()
+        frame.isVisible = true
+        inputText.grabFocus()
     }
 
-    fun replaceOptions(options: List<Command>, selectIndex: Int = 0) {
+    fun replaceOptions(options: List<CommandWithSearchResults>, selectIndex: Int = 0) {
         this.options.clear()
         this.options.addAll(
             options.mapIndexed { idx, it ->
@@ -112,23 +127,56 @@ class MainUI {
             }
         )
         updateOptions()
+        optionsPanel.scrollTo(selectIndex)
     }
 
     fun changeSelection(previousSelected: Int, selected: Int) {
         options[previousSelected].selected = false
         options[selected].selected = true
+
+        optionsPanel.scrollTo(selected)
     }
 
     private fun updateOptions() {
         optionsPanel.apply {
             removeAll()
-            options.forEach {
-                if (Themes.stackOnTop) add(it, 0)
-                else add(it)
+            options.forEach { optionUI ->
+                if (Themes.stackOnTop) add(optionUI, 0)
+                else add(optionUI)
             }
         }
+        optionsScrollPane.themedSize(options.size)
         frame.themedSize(options.size)
     }
+
+    fun updatePlaceholder(selected: Int) {
+        val option = options[selected]
+        val command = option.option.command
+        val searchResultLevel = option.option.searchResults.level
+
+        inputText.apply {
+            val originText = unselectedText
+            val partition: Int
+            val text: String
+
+            if (command.title == command.keyWord && searchResultLevel == SearchLevel.STARTING) {
+                partition = originText.length
+                text = originText + command.title.substring(originText.length)
+            } else {
+                partition = command.title.length
+                text = originText
+            }
+
+            SwingUtilities.invokeLater {
+                inputText.document.removeDocumentListener(listener)
+                inputText.text = text
+                inputText.selectionStart = partition
+                inputText.selectionEnd = command.title.length
+                inputText.document.addDocumentListener(listener)
+            }
+        }
+    }
+
 
     private val JTextField.unselectedText: String get() {
         val start = selectionStart
@@ -137,6 +185,27 @@ class MainUI {
             start == end -> text
             end == text.length -> text.substring(0, start)
             else -> text
+        }
+    }
+
+    private fun JPanel.scrollTo(index: Int) {
+        if (index >= 0 && index < this@MainUI.options.size) {
+            val selectedOptionComponent = options[index]
+            SwingUtilities.invokeLater {
+                if (selectedOptionComponent.isShowing) {
+                    scrollRectToVisible(selectedOptionComponent.bounds)
+                }
+            }
+        }
+    }
+
+    inner class OnChangeDocumentListener: DocumentListener {
+        override fun insertUpdate(e: DocumentEvent) = onChange()
+        override fun removeUpdate(e: DocumentEvent) = onChange(true)
+        override fun changedUpdate(e: DocumentEvent) = onChange()
+
+        private fun onChange(remove: Boolean = false) {
+            controller.onChangedInput(inputText.unselectedText, remove)
         }
     }
 }

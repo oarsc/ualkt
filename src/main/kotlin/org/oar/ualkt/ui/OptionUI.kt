@@ -1,46 +1,97 @@
 package org.oar.ualkt.ui
 
-import org.oar.ualkt.commands.Command
-import org.oar.ualkt.ui.themes.Themes.themedBorder
+import org.oar.ualkt.model.CommandWithSearchResults
+import org.oar.ualkt.services.iconLoader.IconLoader
+import org.oar.ualkt.ui.themes.Themes.themedFocusTextStyle
+import org.oar.ualkt.ui.themes.Themes.themedIconSize
 import org.oar.ualkt.ui.themes.Themes.themedSelectedBackground
 import org.oar.ualkt.ui.themes.Themes.themedSize
 import org.oar.ualkt.ui.themes.Themes.themedTextStyle
-import java.awt.BorderLayout
-import java.awt.Color
+import java.awt.BorderLayout.CENTER
+import javax.swing.BoxLayout
+import javax.swing.ImageIcon
 import javax.swing.JLabel
 import javax.swing.JPanel
-import javax.swing.border.EmptyBorder
+import javax.swing.SwingConstants
+
 
 class OptionUI(
-    val option: Command,
+    val option: CommandWithSearchResults,
     selected: Boolean = false
 ): JPanel() {
-    private val inputText: JLabel
-
     var selected: Boolean = selected
         set(value) {
             field = value
-            inputText.themedSelectedBackground(value)
+            themedSelectedBackground(value)
         }
 
     init {
         isOpaque = false
-        layout = BorderLayout()
+        layout = BoxLayout(this, BoxLayout.X_AXIS)
 
-        inputText = JLabel().apply {
-            text = option.title
+        themedSelectedBackground(selected)
+        themedSize()
+
+        JLabel().apply {
+            horizontalAlignment = SwingConstants.CENTER
+
+            themedIconSize()
+
+            IconLoader.loadIcon(option.command.icon) {
+                icon = it
+                revalidate()
+                repaint()
+            }
+
+            this@OptionUI.add(this, CENTER)
+        }
+
+        val title = option.command.title
+        var prevStarting = 0
+
+        option.searchResults.matchingIndexes.forEach {
+            addText(title, prevStarting, it.first)
+            addFocusedText(title, it.first, it.second)
+            prevStarting = it.second
+        }
+        addText(title, prevStarting, title.length)
+    }
+
+    private fun addText(content: String, start: Int, end: Int) {
+        if (start == end) return
+
+        val textPart = content.substring(start, end)
+        if (textPart.isEmpty()) return
+
+        val component = JLabel().apply {
+            text = textPart
             isOpaque = false
 
             themedTextStyle()
-            themedSize()
-            themedBorder()
-            themedSelectedBackground(selected)
-
-            font = font.deriveFont(20f)
-            foreground = Color.WHITE
-            border = EmptyBorder(5, 15, 5, 15)
         }
 
-        add(inputText, BorderLayout.CENTER)
+        add(component)
+    }
+
+    private fun addFocusedText(content: String, start: Int, end: Int) {
+        if (start == end) return
+
+        val textPart = content.substring(start, end)
+        if (textPart.isEmpty()) return
+
+        val component = JLabel().apply {
+            text = textPart
+            isOpaque = false
+
+            themedTextStyle()
+            themedFocusTextStyle()
+            //        themedSize()
+        }
+
+        add(component)
+    }
+
+    companion object {
+        private val imageCache = mutableMapOf<String, ImageIcon>()
     }
 }

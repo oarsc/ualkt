@@ -9,17 +9,17 @@ import kotlin.system.exitProcess
 
 class InternalCommand(
     private val config : InternalConfigElement,
-) : Command("InternalCommand") {
+) : Command() {
 
-    override var keyWord: String = config.key
-    override var icon = "ualth"
+    override val keyWord: String = config.key
+
+    override val title: String = when(config.command) {
+        EXIT -> "Exits ualkt"
+        RELOAD -> "Reloads ualkt configuration"
+    }
 
     init {
-        title = when(config.command) {
-            EXIT -> "Exits ualth"
-            RELOAD -> "Reloads ualth configuration"
-        }
-        generateId()
+        generateMd5Id()
     }
 
     override fun perform(argsList: List<String>, controller: Controller) {

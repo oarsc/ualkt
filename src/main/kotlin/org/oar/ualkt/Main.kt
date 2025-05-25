@@ -8,10 +8,11 @@ import org.oar.ualkt.ui.themes.Themes
 import org.oar.ualkt.utils.Constants.APP_NAME
 import javax.swing.SwingUtilities
 
-
 fun main() {
     System.setProperty("awtAppClassName", APP_NAME)
-    Themes.theme = DefaultTheme(800, 50)
+    Themes.theme = DefaultTheme(800, 50, 40, 17)
+
+//    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
 
     SwingUtilities.invokeLater {
         val ui = MainUI()
