@@ -21,6 +21,8 @@ class DefaultTheme(
     override val stackOnTop = false
     override val iconSize = 32
 
+    private val backgroundColor = Color(37, 37, 37, 254)
+
     override fun setSize(frame: JFrame, items: Int) {
         frame.setSize(width, inputHeight + items.coerceAtMost(maxElements) * height)
     }
@@ -36,7 +38,7 @@ class DefaultTheme(
     }
 
     override fun setBackground(frame: JFrame) {
-        frame.background = Color(37, 37, 37, 254)
+        frame.background = backgroundColor
     }
 
     override fun setTextStyle(textField: JTextField) {
@@ -68,8 +70,7 @@ class DefaultTheme(
 
     override fun setSelectedBackground(panel: JPanel, selected: Boolean) {
         panel.apply {
-            background = if (selected) Color(74, 74, 74) else null
-            isOpaque = selected
+            background = if (selected) Color(74, 74, 74) else backgroundColor
         }
     }
 

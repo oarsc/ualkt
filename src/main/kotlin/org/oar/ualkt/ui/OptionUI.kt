@@ -18,7 +18,7 @@ import javax.swing.SwingConstants
 class OptionUI(
     val option: CommandWithSearchResults,
     selected: Boolean = false
-): JPanel() {
+) : JPanel() {
     var selected: Boolean = selected
         set(value) {
             field = value
@@ -26,7 +26,6 @@ class OptionUI(
         }
 
     init {
-        isOpaque = false
         layout = BoxLayout(this, BoxLayout.X_AXIS)
 
         themedSelectedBackground(selected)
@@ -39,8 +38,6 @@ class OptionUI(
 
             IconLoader.loadIcon(option.command.icon) {
                 icon = it
-                revalidate()
-                repaint()
             }
 
             this@OptionUI.add(this, CENTER)

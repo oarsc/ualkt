@@ -11,17 +11,14 @@ object IconLoader {
     private val imageCache = mutableMapOf<String, ImageWorker>()
 
     fun loadIcon(iconUrl: String, callback: (ImageIcon) -> Unit) {
-        if (iconUrl.startsWith("http")) {
-            val iconWorker = imageCache[iconUrl]
-
-            if (iconWorker == null) {
-                imageCache[iconUrl] = ImageWorker(iconUrl, callback)
-                    .apply { execute() }
-            } else if (iconWorker.isDone) {
-                iconWorker.get()?.let(callback)
-            } else {
-                iconWorker.callbacks.add(callback)
-            }
+        val iconWorker = imageCache[iconUrl]
+        if (iconWorker == null) {
+            imageCache[iconUrl] = ImageWorker(iconUrl, callback)
+                .apply { execute() }
+        } else if (iconWorker.isDone) {
+            iconWorker.get()?.let(callback)
+        } else {
+            iconWorker.callbacks.add(callback)
         }
     }
 
@@ -33,11 +30,18 @@ object IconLoader {
 
         override fun doInBackground(): ImageIcon? {
             val iconSize = Themes.iconSize
+
             return try {
-                val imageUrl = URI.create(iconUrl).toURL()
+                val imageUrl = when {
+                    iconUrl.startsWith("http") -> URI.create(iconUrl).toURL()
+                    iconUrl.startsWith("fake-favicon-uri") -> return null
+                    else -> javaClass.getResource("/icons/$iconUrl.png")
+                }
+
                 val originalImage = ImageIO.read(imageUrl)
                 val scaledImage = originalImage.getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)
                 ImageIcon(scaledImage)
+
             } catch (e: Exception) {
                 null
             }

@@ -1,0 +1,13 @@
+{
+	"internal": {
+		"exit": "exit",
+		"reload": "reload"
+	},
+	"firefox": {
+		"bin": "/usr/bin/firefox",
+		"profileFolder": null,
+		"exclude": [
+			"default-old"
+		]
+	}
+}

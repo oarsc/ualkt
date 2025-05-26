@@ -155,23 +155,20 @@ class MainUI {
         val searchResultLevel = option.option.searchResults.level
 
         inputText.apply {
-            val originText = unselectedText
-            val partition: Int
-            val text: String
+            if (selectionStart == selectionEnd && caretPosition < text.length - 1) return
 
-            if (command.title == command.keyWord && searchResultLevel == SearchLevel.STARTING) {
-                partition = originText.length
-                text = originText + command.title.substring(originText.length)
-            } else {
-                partition = command.title.length
-                text = originText
-            }
+            val originText = unselectedText
+            val text =
+                if (command.title == command.keyWord && searchResultLevel == SearchLevel.STARTING)
+                    originText + command.title.substring(originText.length)
+                else
+                    originText
 
             SwingUtilities.invokeLater {
                 inputText.document.removeDocumentListener(listener)
                 inputText.text = text
-                inputText.selectionStart = partition
-                inputText.selectionEnd = command.title.length
+                inputText.caretPosition = text.length          // startPosition
+                inputText.moveCaretPosition(originText.length) // endPosition
                 inputText.document.addDocumentListener(listener)
             }
         }

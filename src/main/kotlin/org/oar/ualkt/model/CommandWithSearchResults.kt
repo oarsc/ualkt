@@ -4,5 +4,6 @@ import org.oar.ualkt.commands.Command
 
 data class CommandWithSearchResults(
     val command: Command,
-    val searchResults: SearchResult
+    val searchResults: SearchResult,
+    var priority: Int = -1
 )
