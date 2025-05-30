@@ -180,19 +180,37 @@ class MainUI(
             val optionHeight = selectedOptionComponent.height
             val optionY = selectedOptionComponent.boundsInParent.minY
 
+            val offset = (scrollPaneHeight - optionHeight) / 2
+
             val targetScrollY = when {
-                optionY < currentScrollY * (optionsPanel.height - scrollPaneHeight) -> {
+                optionY - offset < currentScrollY * (optionsPanel.height - scrollPaneHeight) -> {
                     // Scroll up to bring the option into view
-                    optionY / (optionsPanel.height - scrollPaneHeight)
+                    (optionY - offset) / (optionsPanel.height - scrollPaneHeight)
                 }
-                optionY + optionHeight > currentScrollY * (optionsPanel.height - scrollPaneHeight) + scrollPaneHeight -> {
+                optionY + offset + optionHeight > currentScrollY * (optionsPanel.height - scrollPaneHeight) + scrollPaneHeight -> {
                     // Scroll down to bring the option into view
-                    (optionY + optionHeight - scrollPaneHeight) / (optionsPanel.height - scrollPaneHeight)
+                    (optionY + offset + optionHeight - scrollPaneHeight) / (optionsPanel.height - scrollPaneHeight)
                 }
-                else -> currentScrollY // No scroll needed
+                else -> return
             }
 
-            optionsScrollPane.vvalue = targetScrollY.coerceIn(0.0, 1.0)
+//            optionsScrollPane.vvalue = targetScrollY.coerceIn(0.0, 1.0)
+            // smoothScroll:
+            val animationDuration = 50.0 // milliseconds
+            val startValue = optionsScrollPane.vvalue
+            val endValue = targetScrollY.coerceIn(0.0, 1.0)
+
+            val timeline = javafx.animation.Timeline(
+                javafx.animation.KeyFrame(
+                    javafx.util.Duration.ZERO,
+                    javafx.animation.KeyValue(optionsScrollPane.vvalueProperty(), startValue)
+                ),
+                javafx.animation.KeyFrame(
+                    javafx.util.Duration(animationDuration),
+                    javafx.animation.KeyValue(optionsScrollPane.vvalueProperty(), endValue)
+                )
+            )
+            timeline.play()
         }
     }
 
