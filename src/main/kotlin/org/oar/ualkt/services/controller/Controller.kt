@@ -45,6 +45,11 @@ class Controller(
         ui.updatePlaceholder(selectedIndex)
     }
 
+    fun resolve(text: String): String? {
+
+        return null
+    }
+
     fun onChangedInput(text: String, remove: Boolean) {
         filteredCommands = commands
             .map { CommandWithSearchResults(it, it.match(text)) }

@@ -1,43 +1,53 @@
 package org.oar.ualkt.ui.themes
 
-import javax.swing.JComponent
-import javax.swing.JFrame
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.JScrollPane
-import javax.swing.JTextField
+import javafx.scene.Scene
+import javafx.scene.control.Label
+import javafx.scene.control.ScrollPane
+import javafx.scene.control.TextField
+import javafx.scene.image.ImageView
+import javafx.scene.layout.HBox
+import javafx.stage.Stage
+import org.oar.ualkt.ui.OptionUI
+import javafx.scene.control.ScrollPane as FXScrollPane
+import javafx.scene.control.TextField as FXTextField
 
 object Themes {
-    lateinit var theme: Theme
-
+    lateinit var theme: FXTheme
     val stackOnTop: Boolean get() = theme.stackOnTop
     val iconSize: Int get() = theme.iconSize
 
-    fun JFrame.themedSize(items: Int = 0) = theme.setSize(this, items)
-    fun JFrame.themedPosition() = theme.setMainPosition(this)
-    fun JFrame.themedBackground() = theme.setBackground(this)
-    fun JComponent.themedBorder() = theme.setBorder(this)
-    fun JTextField.themedTextStyle() = theme.setTextStyle(this)
-    fun JLabel.themedTextStyle() = theme.setTextStyle(this)
-    fun JLabel.themedFocusTextStyle() = theme.setFocusTextStyle(this)
-    fun JLabel.themedIconSize() = theme.setIconSize(this)
-    fun JPanel.themedSelectedBackground(selected: Boolean) = theme.setSelectedBackground(this, selected)
-    fun JPanel.themedSize() = theme.setSize(this)
-    fun JScrollPane.themedSize(items: Int = 0) = theme.setSize(this, items)
+    fun Stage.themedSize(items: Int = 0) = theme.setSize(this, items)
+    fun Stage.themedPosition() = theme.setPosition(this)
+    fun Scene.themedBackground() = theme.setBackground(this)
+    fun TextField.themedTextSize() = theme.setTextStyle(this)
+    fun TextField.themedSize() = theme.setSize(this)
+    fun ScrollPane.themedSize(items: Int = 0) = theme.setSize(this, items)
+    fun ScrollPane.themedStyle() = theme.setStyle(this)
+    fun OptionUI.themedBackground(selected: Boolean) = theme.setBackground(this, selected)
+    fun OptionUI.themedSize() = theme.setSize(this)
+    fun ImageView.themedImageBorder() = theme.setImageBorder(this)
+    fun Label.themedStyle(selected: Boolean) = theme.setStyle(this, selected)
 }
 
-interface Theme {
+interface FXTheme {
     val stackOnTop: Boolean
     val iconSize: Int
-    fun setSize(frame: JFrame, items: Int = 0)
-    fun setMainPosition(frame: JFrame)
-    fun setBackground(frame: JFrame)
-    fun setBorder(component: JComponent)
-    fun setTextStyle(textField: JTextField)
-    fun setTextStyle(label: JLabel)
-    fun setFocusTextStyle(label: JLabel)
-    fun setIconSize(label: JLabel)
-    fun setSelectedBackground(panel: JPanel, selected: Boolean)
-    fun setSize(panel: JPanel)
-    fun setSize(scrollPane: JScrollPane, items: Int = 0)
+    fun setSize(stage: Stage, items: Int = 0)
+    fun setPosition(stage: Stage)
+    //    fun setMainPosition(stage: Stage)
+    fun setBackground(scene: Scene)
+    //    fun setBorder(component: FXPane)
+    fun setTextStyle(textField: FXTextField)
+    fun setSize(textField: FXTextField)
+//    fun setTextStyle(label: FXLabel)
+//    fun setFocusTextStyle(label: FXLabel)
+//    fun setIconSize(label: FXLabel)
+//    fun setSelectedBackground(panel: FXPane, selected: Boolean)
+//    fun setSize(panel: FXPane)
+    fun setSize(scrollPane: FXScrollPane, items: Int = 0)
+    fun setStyle(scrollPane: FXScrollPane)
+    fun setBackground(hBox: HBox, selected: Boolean)
+    fun setSize(hBox: HBox)
+    fun setImageBorder(imageView: ImageView)
+    fun setStyle(label: Label, selected: Boolean)
 }

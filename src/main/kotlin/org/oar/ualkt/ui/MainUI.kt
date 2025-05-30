@@ -1,122 +1,122 @@
 package org.oar.ualkt.ui
 
+import javafx.application.Platform
+import javafx.beans.value.ChangeListener
+import javafx.beans.value.ObservableValue
+import javafx.scene.Scene
+import javafx.scene.control.IndexRange
+import javafx.scene.control.ScrollPane
+import javafx.scene.control.TextField
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
+import javafx.scene.layout.VBox
+import javafx.stage.Stage
+import javafx.stage.StageStyle
 import org.oar.ualkt.model.CommandWithSearchResults
 import org.oar.ualkt.model.SearchLevel
 import org.oar.ualkt.services.controller.Controller
 import org.oar.ualkt.ui.themes.Themes
 import org.oar.ualkt.ui.themes.Themes.themedBackground
-import org.oar.ualkt.ui.themes.Themes.themedBorder
 import org.oar.ualkt.ui.themes.Themes.themedPosition
 import org.oar.ualkt.ui.themes.Themes.themedSize
-import org.oar.ualkt.ui.themes.Themes.themedTextStyle
+import org.oar.ualkt.ui.themes.Themes.themedStyle
+import org.oar.ualkt.ui.themes.Themes.themedTextSize
 import org.oar.ualkt.utils.Constants.APP_NAME
-import java.awt.event.FocusEvent
-import java.awt.event.FocusListener
-import java.awt.event.KeyAdapter
-import java.awt.event.KeyEvent
-import javax.swing.BoxLayout
-import javax.swing.JFrame
-import javax.swing.JPanel
-import javax.swing.JScrollPane
-import javax.swing.JTextField
-import javax.swing.SwingUtilities
-import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
 
-
-class MainUI {
+class MainUI(
+    private val stage: Stage
+) {
     lateinit var controller: Controller
-
     private val options = mutableListOf<OptionUI>()
-    private var skipNextOnChange = 0
-    private val listener = OnChangeDocumentListener()
+    private val listener = OnChangeListener()
 
-    private val frame = JFrame(APP_NAME).apply {
-        defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-        isResizable = false
-        isUndecorated = true
-        contentPane.layout = BoxLayout(contentPane, BoxLayout.PAGE_AXIS)
-
+    private val inputText: TextField = TextField().apply {
+        themedTextSize()
         themedSize()
-        themedPosition()
-        themedBackground()
-    }
 
-    private val inputText = JTextField().apply {
-        preferredSize = frame.size
-        isOpaque = false
-
-        themedTextStyle()
-        themedBorder()
-
-        addFocusListener(object : FocusListener {
-            override fun focusGained(event: FocusEvent) {}
-            override fun focusLost(event: FocusEvent) {
-                controller.onEscape()
-            }
-        })
-
-        focusTraversalKeysEnabled = false
-        document.addDocumentListener(listener)
-
-        addKeyListener(object : KeyAdapter() {
-            override fun keyPressed(event: KeyEvent) {
-                when (event.keyCode) {
-                    KeyEvent.VK_ESCAPE -> controller.onEscape()
-                    KeyEvent.VK_ENTER -> {
-                        val accepted = controller.onEnter(text)
-                        if (accepted) {
-                            controller.onEscape()
+        addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+            when (event.code) {
+                KeyCode.DOWN -> {
+                    if (Themes.stackOnTop) controller.onPrev() else controller.onNext()
+                    event.consume()
+                }
+                KeyCode.UP -> {
+                    if (Themes.stackOnTop) controller.onNext() else controller.onPrev()
+                    event.consume()
+                }
+                KeyCode.ESCAPE -> controller.onEscape()
+                KeyCode.ENTER -> {
+                    val accepted = controller.onEnter(text)
+                    if (accepted) controller.onEscape()
+                }
+                KeyCode.TAB -> {
+                    if (selection.length == 0) {
+                        val resolved = controller.resolve(text)
+                        if (resolved == null) {
+                            controller.onChangedInput(text, false)
                         } else {
-                            // animate wrong input
+                            text = resolved
                         }
-                    }
-                    KeyEvent.VK_DOWN -> {
-                        if (Themes.stackOnTop) controller.onPrev()
-                        else controller.onNext()
-                    }
-                    KeyEvent.VK_UP -> {
-                        if (Themes.stackOnTop) controller.onNext()
-                        else controller.onPrev()
-                    }
-                    KeyEvent.VK_TAB -> {
-                        selectionStart = selectionEnd
+                    } else {
+                        selectRange(selection.end, selection.end)
                     }
                 }
+                else -> {}
             }
-        })
+        }
 
-        frame.contentPane.add(this)
+        focusedProperty().addListener { _, oldValue, newValue ->
+            if (oldValue && !newValue) {
+                hideWindow()
+            }
+        }
+
+        selectionProperty().addListener(listener)
     }
+    private val optionsPanel: VBox = VBox()
 
-    private val optionsPanel = JPanel().apply {
-        isOpaque = false
-        layout = BoxLayout(this, BoxLayout.Y_AXIS)
-//        frame.contentPane.add(this)
-    }
-
-    private val optionsScrollPane = JScrollPane(optionsPanel).apply {
-        isOpaque = false
-        viewport.isOpaque = false
-        border = null
-
-        horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-
+    private val optionsScrollPane: ScrollPane = ScrollPane(optionsPanel).apply {
+        isFitToWidth = true
         themedSize(0)
+        themedStyle()
 
-        frame.contentPane.add(this)
+        hbarPolicy = ScrollPane.ScrollBarPolicy.NEVER
+        vbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
+    }
+    private val scene: Scene
+
+
+    init {
+        scene = Scene(VBox(inputText, optionsScrollPane)).apply {
+            themedBackground()
+        }
+        stage.apply {
+            themedSize(0)
+            themedPosition()
+
+            initStyle(StageStyle.UNDECORATED)
+            scene = this@MainUI.scene
+            title = APP_NAME
+            isMaximized = false
+            isResizable = false
+            isAlwaysOnTop = true
+        }
     }
 
     fun hideWindow() {
-        frame.isVisible = false
+        stage.hide()
     }
 
     fun showWindow() {
-        if (frame.isVisible) return
         inputText.text = ""
         updateOptions()
-        frame.isVisible = true
-        inputText.grabFocus()
+
+        if (!stage.isShowing) {
+            stage.show()
+        } else {
+            stage.toFront()
+        }
+        Platform.runLater { inputText.requestFocus() }
     }
 
     fun replaceOptions(options: List<CommandWithSearchResults>, selectIndex: Int = 0) {
@@ -127,26 +127,23 @@ class MainUI {
             }
         )
         updateOptions()
-        optionsPanel.scrollTo(selectIndex)
+        scrollTo(selectIndex)
     }
 
     fun changeSelection(previousSelected: Int, selected: Int) {
         options[previousSelected].selected = false
         options[selected].selected = true
-
-        optionsPanel.scrollTo(selected)
+        scrollTo(selected)
     }
 
     private fun updateOptions() {
-        optionsPanel.apply {
-            removeAll()
-            options.forEach { optionUI ->
-                if (Themes.stackOnTop) add(optionUI, 0)
-                else add(optionUI)
-            }
+        optionsPanel.children.clear()
+        options.forEach { optionUI ->
+            if (Themes.stackOnTop) optionsPanel.children.add(0, optionUI)
+            else optionsPanel.children.add(optionUI)
         }
         optionsScrollPane.themedSize(options.size)
-        frame.themedSize(options.size)
+        stage.themedSize(options.size)
     }
 
     fun updatePlaceholder(selected: Int) {
@@ -155,54 +152,70 @@ class MainUI {
         val searchResultLevel = option.option.searchResults.level
 
         inputText.apply {
-            if (selectionStart == selectionEnd && caretPosition < text.length - 1) return
-
             val originText = unselectedText
-            val text =
+
+            val newText =
                 if (command.title == command.keyWord && searchResultLevel == SearchLevel.STARTING)
                     originText + command.title.substring(originText.length)
                 else
                     originText
 
-            SwingUtilities.invokeLater {
-                inputText.document.removeDocumentListener(listener)
-                inputText.text = text
-                inputText.caretPosition = text.length          // startPosition
-                inputText.moveCaretPosition(originText.length) // endPosition
-                inputText.document.addDocumentListener(listener)
+            selectionProperty().removeListener(listener)
+            Platform.runLater {
+                text = newText
+                positionCaret(newText.length)
+                selectRange(originText.length, newText.length)
+                selectionProperty().addListener(listener)
             }
         }
     }
 
+    private fun scrollTo(index: Int) {
+        if (index >= 0 && index < options.size) {
+            val selectedOptionComponent = options[index]
 
-    private val JTextField.unselectedText: String get() {
-        val start = selectionStart
-        val end = selectionEnd
-        return when {
-            start == end -> text
-            end == text.length -> text.substring(0, start)
+            val scrollPaneHeight = optionsScrollPane.height
+            val currentScrollY = optionsScrollPane.vvalue
+
+            val optionHeight = selectedOptionComponent.height
+            val optionY = selectedOptionComponent.boundsInParent.minY
+
+            val targetScrollY = when {
+                optionY < currentScrollY * (optionsPanel.height - scrollPaneHeight) -> {
+                    // Scroll up to bring the option into view
+                    optionY / (optionsPanel.height - scrollPaneHeight)
+                }
+                optionY + optionHeight > currentScrollY * (optionsPanel.height - scrollPaneHeight) + scrollPaneHeight -> {
+                    // Scroll down to bring the option into view
+                    (optionY + optionHeight - scrollPaneHeight) / (optionsPanel.height - scrollPaneHeight)
+                }
+                else -> currentScrollY // No scroll needed
+            }
+
+            optionsScrollPane.vvalue = targetScrollY.coerceIn(0.0, 1.0)
+        }
+    }
+
+    private val TextField.unselectedText: String get() = run {
+        when {
+            selection.length == 0 -> text
+            selection.end == text.length -> text.substring(0, selection.start)
             else -> text
         }
     }
 
-    private fun JPanel.scrollTo(index: Int) {
-        if (index >= 0 && index < this@MainUI.options.size) {
-            val selectedOptionComponent = options[index]
-            SwingUtilities.invokeLater {
-                if (selectedOptionComponent.isShowing) {
-                    scrollRectToVisible(selectedOptionComponent.bounds)
-                }
+
+    inner class OnChangeListener: ChangeListener<IndexRange> {
+        override fun changed(observableValue: ObservableValue<out IndexRange>, oldValue: IndexRange, newValue: IndexRange) {
+            if (newValue.length == 0) {
+                val removed =
+                    if (oldValue.length > 0) // if removing selected text
+                        oldValue.start == newValue.start
+                    else                     // if removing character
+                        newValue.start < oldValue.start
+
+                controller.onChangedInput(inputText.text, removed)
             }
-        }
-    }
-
-    inner class OnChangeDocumentListener: DocumentListener {
-        override fun insertUpdate(e: DocumentEvent) = onChange()
-        override fun removeUpdate(e: DocumentEvent) = onChange(true)
-        override fun changedUpdate(e: DocumentEvent) = onChange()
-
-        private fun onChange(remove: Boolean = false) {
-            controller.onChangedInput(inputText.unselectedText, remove)
         }
     }
 }

@@ -26,7 +26,7 @@ class GlobalKeyListener(
     }
 
     override fun nativeKeyTyped(e: NativeKeyEvent) {
-        // No lo necesitamos para este ejemplo
+        // Not needed
     }
 
     companion object {

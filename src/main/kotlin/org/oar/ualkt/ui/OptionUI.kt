@@ -1,94 +1,63 @@
 package org.oar.ualkt.ui
 
+import javafx.geometry.Pos
+import javafx.scene.control.Label
+import javafx.scene.image.ImageView
+import javafx.scene.layout.HBox
 import org.oar.ualkt.model.CommandWithSearchResults
 import org.oar.ualkt.services.iconLoader.IconLoader
-import org.oar.ualkt.ui.themes.Themes.themedFocusTextStyle
-import org.oar.ualkt.ui.themes.Themes.themedIconSize
-import org.oar.ualkt.ui.themes.Themes.themedSelectedBackground
+import org.oar.ualkt.ui.themes.Themes
+import org.oar.ualkt.ui.themes.Themes.themedBackground
+import org.oar.ualkt.ui.themes.Themes.themedImageBorder
 import org.oar.ualkt.ui.themes.Themes.themedSize
-import org.oar.ualkt.ui.themes.Themes.themedTextStyle
-import java.awt.BorderLayout.CENTER
-import javax.swing.BoxLayout
-import javax.swing.ImageIcon
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.SwingConstants
-
+import org.oar.ualkt.ui.themes.Themes.themedStyle
 
 class OptionUI(
     val option: CommandWithSearchResults,
     selected: Boolean = false
-) : JPanel() {
+) : HBox() {
     var selected: Boolean = selected
         set(value) {
             field = value
-            themedSelectedBackground(value)
+            themedBackground(selected)
         }
 
     init {
-        layout = BoxLayout(this, BoxLayout.X_AXIS)
+        alignment = Pos.CENTER_LEFT
 
-        themedSelectedBackground(selected)
-        themedSize()
+        val iconView = ImageView().apply {
+            fitHeight = Themes.iconSize.toDouble()
+            fitWidth = Themes.iconSize.toDouble()
 
-        JLabel().apply {
-            horizontalAlignment = SwingConstants.CENTER
-
-            themedIconSize()
-
-            IconLoader.loadIcon(option.command.icon) {
-                icon = it
+            IconLoader.loadIcon(option.command.icon) { img ->
+                image = img
             }
 
-            this@OptionUI.add(this, CENTER)
+            themedImageBorder()
         }
+
+        themedBackground(selected)
+        themedSize()
+
+        children.add(iconView)
 
         val title = option.command.title
         var prevStarting = 0
-
         option.searchResults.matchingIndexes.forEach {
-            addText(title, prevStarting, it.first)
-            addFocusedText(title, it.first, it.second)
+            addText(title, prevStarting, it.first, false)
+            addText(title, it.first, it.second, true)
             prevStarting = it.second
         }
-        addText(title, prevStarting, title.length)
+        addText(title, prevStarting, title.length, false)
     }
 
-    private fun addText(content: String, start: Int, end: Int) {
+    private fun addText(content: String, start: Int, end: Int, selected: Boolean) {
         if (start == end) return
-
         val textPart = content.substring(start, end)
         if (textPart.isEmpty()) return
-
-        val component = JLabel().apply {
-            text = textPart
-            isOpaque = false
-
-            themedTextStyle()
+        val label = Label(textPart).apply {
+            themedStyle(selected)
         }
-
-        add(component)
-    }
-
-    private fun addFocusedText(content: String, start: Int, end: Int) {
-        if (start == end) return
-
-        val textPart = content.substring(start, end)
-        if (textPart.isEmpty()) return
-
-        val component = JLabel().apply {
-            text = textPart
-            isOpaque = false
-
-            themedTextStyle()
-            themedFocusTextStyle()
-            //        themedSize()
-        }
-
-        add(component)
-    }
-
-    companion object {
-        private val imageCache = mutableMapOf<String, ImageIcon>()
+        children.add(label)
     }
 }

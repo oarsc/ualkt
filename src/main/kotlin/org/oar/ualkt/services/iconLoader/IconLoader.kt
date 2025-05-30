@@ -1,19 +1,17 @@
 package org.oar.ualkt.services.iconLoader
 
-import org.oar.ualkt.ui.themes.Themes
-import java.awt.Image
+import javafx.scene.image.Image
+import java.io.InputStream
 import java.net.URI
-import javax.imageio.ImageIO
-import javax.swing.ImageIcon
 import javax.swing.SwingWorker
 
 object IconLoader {
-    private val imageCache = mutableMapOf<String, ImageWorker>()
+    private val imageCache = mutableMapOf<String, ImageWorkerNew>()
 
-    fun loadIcon(iconUrl: String, callback: (ImageIcon) -> Unit) {
+    fun loadIcon(iconUrl: String, callback: (Image) -> Unit) {
         val iconWorker = imageCache[iconUrl]
         if (iconWorker == null) {
-            imageCache[iconUrl] = ImageWorker(iconUrl, callback)
+            imageCache[iconUrl] = ImageWorkerNew(iconUrl, callback)
                 .apply { execute() }
         } else if (iconWorker.isDone) {
             iconWorker.get()?.let(callback)
@@ -22,30 +20,30 @@ object IconLoader {
         }
     }
 
-    class ImageWorker(
+    class ImageWorkerNew(
         private val iconUrl: String,
-        callback: (ImageIcon) -> Unit
-    ):SwingWorker<ImageIcon?, Unit>() {
+        callback: (Image) -> Unit
+    ): SwingWorker<Image?, Unit>() {
         val callbacks = mutableListOf(callback)
 
-        override fun doInBackground(): ImageIcon? {
-            val iconSize = Themes.iconSize
-
+        override fun doInBackground(): Image? {
             return try {
-                val imageUrl = when {
-                    iconUrl.startsWith("http") -> URI.create(iconUrl).toURL()
-                    iconUrl.startsWith("fake-favicon-uri") -> return null
-                    else -> javaClass.getResource("/icons/$iconUrl.png")
+                val inputStream = when {
+                    iconUrl.startsWith("http") -> onlineImage()
+                    iconUrl.startsWith("fake-favicon-uri") -> null
+                    else -> localImage()
                 }
-
-                val originalImage = ImageIO.read(imageUrl)
-                val scaledImage = originalImage.getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)
-                ImageIcon(scaledImage)
-
+                inputStream?.let { Image(it) }
             } catch (e: Exception) {
                 null
             }
         }
+
+        private fun localImage(): InputStream? =
+            IconLoader::class.java.getResourceAsStream("/icons/$iconUrl.png")
+
+        private fun onlineImage(): InputStream =
+            URI.create(iconUrl).toURL().openStream()
 
         override fun done() {
             val imageIcon = try { get() } catch (e: Exception) { null }

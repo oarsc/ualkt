@@ -1,25 +1,30 @@
 package org.oar.ualkt
 
+import javafx.application.Application
+import javafx.application.Platform
+import javafx.stage.Stage
 import org.oar.ualkt.services.controller.Controller
 import org.oar.ualkt.services.keysListener.GlobalKeyListener
 import org.oar.ualkt.ui.MainUI
-import org.oar.ualkt.ui.themes.DefaultTheme
+import org.oar.ualkt.ui.themes.FXDefaultTheme
 import org.oar.ualkt.ui.themes.Themes
-import org.oar.ualkt.utils.Constants.APP_NAME
-import javax.swing.SwingUtilities
 
-fun main() {
-    System.setProperty("awtAppClassName", APP_NAME)
-    Themes.theme = DefaultTheme(800, 50, 40, 17)
+class UalktApp : Application() {
+    private lateinit var ui: MainUI
+    override fun start(primaryStage: Stage) {
+        Themes.theme = FXDefaultTheme(800, 50, 40, 17)
 
-//    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+        ui = MainUI(primaryStage)
 
-    SwingUtilities.invokeLater {
-        val ui = MainUI()
         ui.controller = Controller(ui)
 
+        Platform.setImplicitExit(false)
         GlobalKeyListener.register {
-            ui.showWindow()
+            Platform.runLater { ui.showWindow() }
         }
     }
+}
+
+fun main(args: Array<String>) {
+    Application.launch(UalktApp::class.java, *args)
 }
