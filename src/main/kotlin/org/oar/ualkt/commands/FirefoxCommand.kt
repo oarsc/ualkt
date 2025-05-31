@@ -64,7 +64,7 @@ class FirefoxCommand(
 
         fun generate(data: FirefoxConfig): List<FirefoxCommand> {
             pathFolder = data.profileFolder ?:
-                if (System.getProperty("os.name").lowercase(Locale.getDefault()) == "win") WIN_PATH else LINUX_PATH
+                if (System.getProperty("os.name").lowercase(Locale.getDefault()).contains("win")) WIN_PATH else LINUX_PATH
             bin = data.bin
 
             val path = pathFolder.replace("~", System.getProperty("user.home"))
