@@ -29,10 +29,13 @@ class FXDefaultTheme(
     }
 
     override fun setPosition(stage: Stage) {
-        stage.centerOnScreen()
-//        val screen = javafx.stage.Screen.getPrimary().visualBounds
-//        stage.x = (screen.width - width) / 2
-//        stage.y = (screen.height - height) / 2 - 200
+//        stage.centerOnScreen()
+        val screen = javafx.stage.Screen.getPrimary().visualBounds
+        stage.x = (screen.width - width) / 2
+        stage.y = with((screen.height - height) / 2 - 200) {
+            if (stackOnTop) this - (stage.height - inputHeight)
+            else this
+        }
     }
 
     override fun setBackground(scene: Scene) {
@@ -83,17 +86,18 @@ class FXDefaultTheme(
     }
 
     override fun setStyle(scrollPane: FXScrollPane) {
-        scrollPane.style = "-fx-padding: 0;"
+        scrollPane.style = "-fx-padding: 0; -fx-background: $backgroundColor;"
     }
 
     override fun setBackground(hBox: HBox, selected: Boolean) {
         hBox.style = if (selected) "-fx-background-color: #4a4a4a;" else "-fx-background-color: $backgroundColor;"
     }
     override fun setSize(hBox: HBox) {
-        val doubleHeight = height.toDouble()
+        val minHeight = height.toDouble()
+        val minWidth = 9983647.toDouble()
         hBox.apply {
-            setPrefSize(Int.MAX_VALUE.toDouble(), doubleHeight)
-            setMinSize(Int.MAX_VALUE.toDouble(), doubleHeight)
+            setPrefSize(minWidth, minHeight)
+            setMinSize(minWidth, minHeight)
         }
     }
     override fun setImageBorder(imageView: ImageView) {

@@ -87,7 +87,12 @@ class MainUI(
 
 
     init {
-        scene = Scene(VBox(inputText, optionsScrollPane)).apply {
+        val root = if (Themes.stackOnTop) {
+            VBox(optionsScrollPane, inputText)
+        } else {
+            VBox(inputText, optionsScrollPane)
+        }
+        scene = Scene(root).apply {
             themedBackground()
         }
         stage.apply {
@@ -98,12 +103,14 @@ class MainUI(
             scene = this@MainUI.scene
             title = APP_NAME
             isMaximized = false
+            isIconified = true
             isResizable = false
             isAlwaysOnTop = true
         }
     }
 
     fun hideWindow() {
+        stage.isIconified = true
         stage.hide()
     }
 
@@ -111,12 +118,9 @@ class MainUI(
         inputText.text = ""
         updateOptions()
 
-        if (!stage.isShowing) {
-            stage.show()
-        } else {
-            stage.toFront()
-        }
-        Platform.runLater { inputText.requestFocus() }
+        stage.show()
+        stage.isIconified = false
+        inputText.requestFocus()
     }
 
     fun replaceOptions(options: List<CommandWithSearchResults>, selectIndex: Int = 0) {
@@ -137,13 +141,16 @@ class MainUI(
     }
 
     private fun updateOptions() {
-        optionsPanel.children.clear()
-        options.forEach { optionUI ->
-            if (Themes.stackOnTop) optionsPanel.children.add(0, optionUI)
-            else optionsPanel.children.add(optionUI)
+        Platform.runLater {
+            optionsPanel.children.clear()
+            options.forEach { optionUI ->
+                if (Themes.stackOnTop) optionsPanel.children.add(0, optionUI)
+                else optionsPanel.children.add(optionUI)
+            }
         }
         optionsScrollPane.themedSize(options.size)
         stage.themedSize(options.size)
+        stage.themedPosition()
     }
 
     fun updatePlaceholder(selected: Int) {
@@ -171,7 +178,12 @@ class MainUI(
     }
 
     private fun scrollTo(index: Int) {
-        if (index >= 0 && index < options.size) {
+        val endValue: Double
+        if (index == 0) {
+            endValue = if (Themes.stackOnTop) 1.0 else 0.0
+
+        } else if (index >= 0 && index < options.size) {
+
             val selectedOptionComponent = options[index]
 
             val scrollPaneHeight = optionsScrollPane.height
@@ -194,24 +206,26 @@ class MainUI(
                 else -> return
             }
 
-//            optionsScrollPane.vvalue = targetScrollY.coerceIn(0.0, 1.0)
-            // smoothScroll:
-            val animationDuration = 50.0 // milliseconds
-            val startValue = optionsScrollPane.vvalue
-            val endValue = targetScrollY.coerceIn(0.0, 1.0)
+            endValue = targetScrollY.coerceIn(0.0, 1.0)
 
-            val timeline = javafx.animation.Timeline(
-                javafx.animation.KeyFrame(
-                    javafx.util.Duration.ZERO,
-                    javafx.animation.KeyValue(optionsScrollPane.vvalueProperty(), startValue)
-                ),
-                javafx.animation.KeyFrame(
-                    javafx.util.Duration(animationDuration),
-                    javafx.animation.KeyValue(optionsScrollPane.vvalueProperty(), endValue)
-                )
+        } else return
+
+//            optionsScrollPane.vvalue = endValue
+        // smoothScroll:
+        val animationDuration = 50.0 // milliseconds
+        val startValue = optionsScrollPane.vvalue
+
+        val timeline = javafx.animation.Timeline(
+            javafx.animation.KeyFrame(
+                javafx.util.Duration.ZERO,
+                javafx.animation.KeyValue(optionsScrollPane.vvalueProperty(), startValue)
+            ),
+            javafx.animation.KeyFrame(
+                javafx.util.Duration(animationDuration),
+                javafx.animation.KeyValue(optionsScrollPane.vvalueProperty(), endValue)
             )
-            timeline.play()
-        }
+        )
+        timeline.play()
     }
 
     private val TextField.unselectedText: String get() = run {
